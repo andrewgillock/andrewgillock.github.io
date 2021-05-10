@@ -1,0 +1,303 @@
+---
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "Andrew Gillock apg2255"
+date: '27 April 2021'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+---
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+```
+
+## Introduction
+
+```{r}
+library(tidyverse)
+members <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/members.csv')
+
+#Forming binary variable and cleaning
+members <- members %>% mutate(success = ifelse(success == "TRUE", 1, 0)) %>% 
+  mutate(died = ifelse(died == "TRUE", 1, 0)) %>% 
+  select(-expedition_id, -death_cause, -death_height_metres, -injury_type, -injury_height_metres) %>% 
+  na.omit() %>% filter(season != "Unknown")
+ 
+head(members)
+```
+
+*This dataset was obtained from Github's 2020 archive of tidytuesday posts. The members dataset includes information regarding Himalayan expeditions from 1905 to 2019 to more than 465 peaks in Nepal. The name of each variable is reflective of what it is measuring, but the highest point reached by the climber (highpoint_metres), whether or not the expedition was successful (success), and whether or not oxygen was used (oxygen_used) are the main studied variables. The tidied dataset contains 16 variables and 52,385 observations.*
+
+## MANOVA
+
+```{r}
+#MANOVA test
+
+man1 <- manova(cbind(success, died, highpoint_metres) ~ season, data = members) #1 MANOVA
+
+summary(man1)
+
+summary.aov(man1) #3 ANOVAs
+```
+```{r}
+members %>% group_by(season) %>% 
+  summarize(mean(success), mean(died), mean(highpoint_metres))
+
+pairwise.t.test(members$success, members$season, p.adj = "none") #18 t tests!
+pairwise.t.test(members$died, members$season, p.adj = "none")
+pairwise.t.test(members$highpoint_metres, members$season, p.adj = "none")
+```
+
+*A one-way MANOVA test was performed in order to determine if the highest point reached by the climber, whether or not they succeeded, or whether or not they died showed a mean difference depending on the season of the expedition. The results suggested that at least one of the above variables showed a mean difference. 3 ANOVAs were conducted and it was determined that  the success of the expedition, whether or not the climber died, and the highest point reached all showed significant differences across seasons. Post-hoc t-tests were carried out for each variable to determine which seasons differ. A total of 22 tests were carried out when studying these relationships. The probability of encountering a type I error was equal to 1-(0.95)^22 = 0.6765. The overall error rate was kept to 5% using the Bonferroni correction (0.05/22) = 0.002273. When examining the results of the pairwise t tests, it's clear that the success of the climbers is significantly affected by the season of the expedition except when comparing Autumn to Summer. Whether or not the climber died is also significantly affected by season, but only when comparing Autumn to Winter. Finally, the highest point reached by the climber was significantly effected by each season. The chosen dataset does not meet assumptions of the MANOVA test, as the covariance between any of the dependent variables is not equal.*
+
+
+## Randomization
+
+```{r}
+obs_F <- 3824.7
+
+Fs <- replicate(5000, {
+  new <- members %>% mutate(highpoint_metres = sample(highpoint_metres))
+  SSW <- new %>% group_by(season) %>% 
+    summarize(SSW = sum((highpoint_metres - mean(highpoint_metres))^2)) %>% 
+    summarize(sum(SSW)) %>% pull
+  SSB <- new %>% mutate(mean = mean(highpoint_metres)) %>% group_by(season) %>% 
+    mutate(groupmean = mean(highpoint_metres)) %>% 
+    summarize(SSB = sum((mean - groupmean)^2)) %>% 
+    summarize(sum(SSB)) %>% pull
+  (SSB/3) / (SSW/52379)
+})
+
+hist(Fs, prob = T)
+mean(Fs>obs_F)
+```
+
+
+*A randomization test was performed in order to determine if the variable season significantly affects the maximum height reached by climbers. If the variables are unrelated, a distribution of simulated F values would be relatively consistent.*
+*H0: All groups (seasons) have the same means*
+*HA: The mean differs for different groups* 
+*Considering that none of the F statistics generated during the randomization were greater than the observed F value of 3824.7, we can reject the null hypothesis meaning that there is a significant difference in the highpoint reached by climbers depending on the season.*
+
+## Linear Regression Model
+
+```{r}
+fit <- lm(highpoint_metres ~ age * oxygen_used, data = members)
+summary(fit)
+
+members %>% ggplot(aes(x = age, y = highpoint_metres)) + 
+  geom_point(aes(color = oxygen_used)) + geom_smooth(method = 'lm', se =F)
+
+```
+
+*The highest point that climbers reached was predicted using their age and whether or not oxygen was used. The resulting linear regression model suggests that the height reached by climbers is significantly affected by their age, whether or not they used oxygen, and the interaction between these variables. As climbers increase in age by 1 year, the highest point reached is expected to drop by 10.81 meters. If oxygen is used, the highest point reached is expected to increase by 1424.17 meters. As climbers increase with age, they are expected to increase their height reached by 4.88 meters if oxygen is used.*
+
+```{r}
+library(lmtest)
+library(sandwich)
+resids <- fit$residuals
+fitvals <- fit$fitted.values
+
+ggplot() + geom_point(aes(fitvals, resids)) +
+  geom_hline(yintercept = 0, color = "red") #linearity NOT met
+
+ks.test(resids, "pnorm", mean = 0, sd(resids)) #normality NOT met
+
+bptest(fit) #homoskedasticity NOT met
+
+summary(fit)$coef[, 1:2]
+coeftest(fit, vcov = vcovHC(fit))[, 1:2]
+```
+
+*The fitted values were plotted against residual values to test for linearity. The non-random aggregation of points suggests that linearity is not met. A one-sample Kolmogorov-Smirnov test suggests that normality is not met (p < 0.001). A Breuch-Pagan test suggests that heteroskedasticity is present (p < 0.001). Robust standard errors were used to determine the results of the adjusted regression, and the results are seen above. The changes in standard error are indicative of the adjustments made as a result of homoskedasticity violations.*
+
+
+##Bootstrapped Standard Errors
+
+```{r}
+#residual resample
+resids <- fit$residuals
+fitvals <- fit$fitted.values
+resid_resamp <- replicate(5000, {
+  new_resids <- sample(resids, replace = TRUE)
+  members$new_y <- fitvals + new_resids
+  fit <- lm(new_y ~ age * oxygen_used, data = members)
+  coef(fit)
+})
+
+coeftest(fit)[, 1:2] #standard
+coeftest(fit, vcov = vcovHC(fit))[, 1:2] #robust
+resid_resamp %>% t %>% as.data.frame() %>% summarize_all(sd) #bootstrapped using resamp of resids
+```
+
+*The same regression model was run using bootstrapped standard errors. This process was done by resampling the residuals of the initial model. The bootstrapped standard errors are closer in value to the original standard errors than the robust values previously calculated.*
+
+## Logistic Regression Model from 2 Variables
+
+```{r}
+library(lmtest)
+library(tidyverse)
+fit2 <- glm(success ~ sex + season, data = members, family = "binomial")
+coeftest(fit2)
+
+probs <- predict(fit2, type = "response")
+table(predict = as.numeric(probs > 0.5), truth = members$success) %>% addmargins
+
+(2190 + 26323) / 52385 #Accuracy
+26323 / 28071 #Sensitivity
+2190 / 24312 #Specificity
+26323 / 48445 #Precision
+
+```
+
+*A logistic regression model was constructed to predict the outcome of the binary variable 'success', based on the gender of the climber and the season of the expedition. The log-odds of successfully completing the expedition increases by 0.2025 if the climber is a male, meaning the odds of success increases from 0.8963 to 1.097. The odds of success increases for the season of spring, but decreases during summer and especially during winter. The computed model is 54.4% accurate and can predict that a climber is successful during their expedition 93.8% of the time. The model predicts when climbers do not complete the expedition 9% of the time, and the percentage of climbers predicted to succeed who actually do is equal to 54.3%.*
+
+
+```{r}
+library(plotROC) 
+
+ROCplot<-ggplot(members)+geom_roc(aes(d=success,m=probs), n.cuts=0) 
+
+ROCplot
+calc_auc(ROCplot)
+
+members$logit<-predict(fit2,type="link")
+#hideous
+members %>% ggplot() + 
+  geom_density(aes(logit,color=success,fill=success), alpha=.4) +
+  theme(legend.position=c(.85,.85)) + geom_vline(xintercept=0) + 
+  xlab("logit (log-odds)") +
+  geom_rug(aes(logit,color=success))
+ 
+```
+
+*The resulting ROC plot suggests that the model is not great at predicting the success of climbers based on their gender and the season of the expedition. This is due to overlap between the TPR and FPR. The AUC is equal to 0.5331, which further proves the ineffectiveness of the model.*
+
+## Logistic Regression from All Variables
+
+```{r}
+class_diag<-function(probs,truth){
+  
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+  
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  prediction<-ifelse(probs>.5,1,0)
+  acc=mean(truth==prediction)
+  sens=mean(prediction[truth==1]==1)
+  spec=mean(prediction[truth==0]==0)
+  ppv=mean(truth[prediction==1]==1)
+  f1=2*(sens*ppv)/(sens+ppv)
+  
+  #CALCULATE EXACT AUC
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}
+```
+
+```{r}
+fit3 <- glm(success~year + season + sex + age + hired +
+              highpoint_metres + solo + oxygen_used, family = "binomial", data = members)
+
+probs <- predict(fit3, type = "response")
+table(predict = as.numeric(probs > 0.5), truth = members$success) %>% addmargins
+
+(16657 + 21319) / 52383 #Accuracy
+21319 / 28071 #Sensitivity
+16657 / 24312 #Specificity
+21319 / 28974 #Precision
+
+```
+
+*The logistic regression model is 72.5% accurate and can predict whether a climber is successful or not 75.9% of the time. The model predicts when climbers do not complete the expedition 68.5% of the time, and the percentage of climbers predicted to succeed who actually do is equal to 73.6%.*
+
+```{r}
+k=10
+
+data <- members %>% sample_frac 
+folds <- ntile(1:nrow(data),n=10) 
+
+diags<-NULL
+for(i in 1:k){
+  train <- data[folds!=i,]
+  test <- data[folds==i,]
+  truth <- test$success 
+  
+  fit3 <- glm(success~year + season + sex + age + hired +
+                highpoint_metres + solo + oxygen_used, data = members, family="binomial")
+  probs <- predict(fit, newdata=test, type="response")
+  
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)
+```
+
+*A 10-fold cross-validation suggests that the model is 53.6% accurate, meaning that it can predict whether or not an expedition is successful 53.6% of the time based on the selected variables. The sensitivity is equal to 1, and specificity equal to 0. The AUC value is equal to 0.6979, which is much higher than before.*
+
+```{r}
+library(glmnet)
+y<-as.matrix(members$success) 
+x<-model.matrix(success ~ year + season + sex + age + hired +
+                  highpoint_metres + solo + oxygen_used, data = members)[,-1] 
+head(x)
+
+
+cv <- cv.glmnet(x,y) 
+
+{plot(cv$glmnet.fit, "lambda", label=TRUE); abline(v = log(cv$lambda.1se)); abline(v = log(cv$lambda.min),lty=2)}
+
+
+
+cv<-cv.glmnet(x,y,family="binomial")
+lasso<-glmnet(x,y,family="binomial",lambda=cv$lambda.1se)
+coef(lasso)
+
+fit4 <- glm(success~year + season + age + hired + highpoint_metres, family = "binomial", data = members)
+
+k=10
+
+data <- members %>% sample_frac
+folds <- ntile(1:nrow(data),n=10) 
+
+diags<-NULL
+for(i in 1:k){
+  train <- data[folds!=i,]
+  test <- data[folds==i,] 
+  truth <- test$success 
+  
+  fit4 <- glm(success~year + season + age + hired + highpoint_metres, data = members, family="binomial")
+  probs <- predict(fit, newdata=test, type="response")
+  
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)
+```
+
+*Performing a LASSO on the model retained only the year, season, age, hired, and highpoint variables. Performing another 10-fold cross-validation yields similar results to before, with only the AUC changing slightly.*

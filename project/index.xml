@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Andrew Gillock</title>
+    <link>/project/</link>
+    <description>Recent content in Projects on Andrew Gillock</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
+      <link>/project/project2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>Introduction library(tidyverse) members &amp;lt;- readr::read_csv(&amp;#39;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/members.csv&amp;#39;) #Forming binary variable and cleaning members &amp;lt;- members %&amp;gt;% mutate(success = ifelse(success == &amp;quot;TRUE&amp;quot;, 1, 0)) %&amp;gt;% mutate(died = ifelse(died == &amp;quot;TRUE&amp;quot;, 1, 0)) %&amp;gt;% select(-expedition_id, -death_cause, -death_height_metres, -injury_type, -injury_height_metres) %&amp;gt;% na.omit() %&amp;gt;% filter(season != &amp;quot;Unknown&amp;quot;) head(members) ## # A tibble: 6 x 16 ## member_id peak_id peak_name year season sex age citizenship expedition_role hired ## &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;lgl&amp;gt; ## 1 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 41 France Deputy Leader FALSE ## 2 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 40 France Exp Doctor FALSE ## 3 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 25 France Climber FALSE ## 4 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 41 France Climber FALSE ## 5 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 29 France Climber FALSE ## 6 AMAD7910… AMAD Ama Dabl… 1979 Spring M 37 W Germany Climber FALSE ## # … with 6 more variables: highpoint_metres &amp;lt;dbl&amp;gt;, success &amp;lt;dbl&amp;gt;, solo &amp;lt;lgl&amp;gt;, oxygen_used &amp;lt;lgl&amp;gt;, ## # died &amp;lt;dbl&amp;gt;, injured &amp;lt;lgl&amp;gt; This dataset was obtained from Github’s 2020 archive of tidytuesday posts.</description>
+    </item>
+    
+    <item>
+      <title>SDS348 Project 1: Exploratory Data Analysis</title>
+      <link>/project/project1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>Data Wrangling and Data Exploration  0. Introduction library(tidyverse) launches &amp;lt;- read_csv(&amp;quot;launches.csv&amp;quot;) launches &amp;lt;- launches %&amp;gt;% filter(state_code == &amp;quot;US&amp;quot;) %&amp;gt;% select(launch_date, launch_year, mission, category) head(launches) ## # A tibble: 6 x 4 ## launch_date launch_year mission category ## &amp;lt;date&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt; ## 1 1967-06-29 1967 Secor Type II S/N 10 O ## 2 1967-08-23 1967 DAPP 3419 O ## 3 1967-10-11 1967 DAPP 4417 O ## 4 1968-05-23 1968 DAPP 5420 O ## 5 1968-10-23 1968 DAPP 6422 O ## 6 1969-07-23 1969 DAPP 7421 O The first dataset I selected came from the archive of tidytuesday data from github, and contains information regarding rocket launches from 1957 to 2018.</description>
+    </item>
+    
+  </channel>
+</rss>

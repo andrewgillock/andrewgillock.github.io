@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Andrew Gillock" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
+    <title>Project 2: Modeling, Testing, and Predicting</title>
+    <meta name="generator" content="Hugo 0.83.1" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../../css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="../../"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="../../post/">BLOG</a></li>
+        
+        <li><a href="../../projects/">PROJECTS</a></li>
+        
+        <li><a href="../../resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="../../project/project2/">Project 2: Modeling, Testing, and Predicting</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         January 1, 0001 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<pre class="r"><code>library(tidyverse)
+members &lt;- readr::read_csv(&#39;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/members.csv&#39;)
+
+#Forming binary variable and cleaning
+members &lt;- members %&gt;% mutate(success = ifelse(success == &quot;TRUE&quot;, 1, 0)) %&gt;% 
+  mutate(died = ifelse(died == &quot;TRUE&quot;, 1, 0)) %&gt;% 
+  select(-expedition_id, -death_cause, -death_height_metres, -injury_type, -injury_height_metres) %&gt;% 
+  na.omit() %&gt;% filter(season != &quot;Unknown&quot;)
+ 
+head(members)</code></pre>
+<pre><code>## # A tibble: 6 x 16
+## member_id peak_id peak_name year season sex age
+citizenship expedition_role hired
+## &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+&lt;lgl&gt;
+## 1 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 41 France
+Deputy Leader FALSE
+## 2 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 40 France Exp
+Doctor FALSE
+## 3 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 25 France
+Climber FALSE
+## 4 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 41 France
+Climber FALSE
+## 5 AMAD7830… AMAD Ama Dabl… 1978 Autumn M 29 France
+Climber FALSE
+## 6 AMAD7910… AMAD Ama Dabl… 1979 Spring M 37 W Germany
+Climber FALSE
+## # … with 6 more variables: highpoint_metres &lt;dbl&gt;,
+success &lt;dbl&gt;, solo &lt;lgl&gt;, oxygen_used &lt;lgl&gt;,
+## # died &lt;dbl&gt;, injured &lt;lgl&gt;</code></pre>
+<p><em>This dataset was obtained from Github’s 2020 archive of tidytuesday posts. The members dataset includes information regarding Himalayan expeditions from 1905 to 2019 to more than 465 peaks in Nepal. The name of each variable is reflective of what it is measuring, but the highest point reached by the climber (highpoint_metres), whether or not the expedition was successful (success), and whether or not oxygen was used (oxygen_used) are the main studied variables. The tidied dataset contains 16 variables and 52,385 observations.</em></p>
+</div>
+<div id="manova" class="section level2">
+<h2>MANOVA</h2>
+<pre class="r"><code>#MANOVA test
+
+man1 &lt;- manova(cbind(success, died, highpoint_metres) ~ season, data = members) #1 MANOVA
+
+summary(man1)</code></pre>
+<pre><code>## Df Pillai approx F num Df den Df Pr(&gt;F)
+## season 3 0.21691 1360.8 9 157137 &lt; 2.2e-16 ***
+## Residuals 52379
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary.aov(man1) #3 ANOVAs</code></pre>
+<pre><code>## Response success :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## season 3 52.6 17.5278 70.754 &lt; 2.2e-16 ***
+## Residuals 52379 12975.7 0.2477
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response died :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## season 3 0.28 0.092279 6.5927 0.000189 ***
+## Residuals 52379 733.16 0.013997
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response highpoint_metres :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## season 3 1.021e+10 3403446900 3824.7 &lt; 2.2e-16 ***
+## Residuals 52379 4.661e+10 889864
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>members %&gt;% group_by(season) %&gt;% 
+  summarize(mean(success), mean(died), mean(highpoint_metres))</code></pre>
+<pre><code>## # A tibble: 4 x 4
+## season `mean(success)` `mean(died)`
+`mean(highpoint_metres)`
+## &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 Autumn 0.518 0.0135 7051.
+## 2 Spring 0.559 0.0144 7911.
+## 3 Summer 0.451 0.00267 6593.
+## 4 Winter 0.384 0.0275 6813.</code></pre>
+<pre class="r"><code>pairwise.t.test(members$success, members$season, p.adj = &quot;none&quot;) #18 t tests!</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  members$success and members$season 
+## 
+##        Autumn  Spring  Summer
+## Spring &lt; 2e-16 -       -     
+## Summer 0.0091  2.7e-05 -     
+## Winter &lt; 2e-16 &lt; 2e-16 0.0246
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(members$died, members$season, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  members$died and members$season 
+## 
+##        Autumn  Spring  Summer 
+## Spring 0.36397 -       -      
+## Summer 0.07943 0.05603 -      
+## Winter 6e-05   0.00018 0.00038
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(members$highpoint_metres, members$season, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  members$highpoint_metres and members$season 
+## 
+##        Autumn  Spring  Summer 
+## Spring &lt; 2e-16 -       -      
+## Summer &lt; 2e-16 &lt; 2e-16 -      
+## Winter &lt; 2e-16 &lt; 2e-16 8.6e-05
+## 
+## P value adjustment method: none</code></pre>
+<p><em>A one-way MANOVA test was performed in order to determine if the highest point reached by the climber, whether or not they succeeded, or whether or not they died showed a mean difference depending on the season of the expedition. The results suggested that at least one of the above variables showed a mean difference. 3 ANOVAs were conducted and it was determined that the success of the expedition, whether or not the climber died, and the highest point reached all showed significant differences across seasons. Post-hoc t-tests were carried out for each variable to determine which seasons differ. A total of 22 tests were carried out when studying these relationships. The probability of encountering a type I error was equal to 1-(0.95)^22 = 0.6765. The overall error rate was kept to 5% using the Bonferroni correction (0.05/22) = 0.002273. When examining the results of the pairwise t tests, it’s clear that the success of the climbers is significantly affected by the season of the expedition except when comparing Autumn to Summer. Whether or not the climber died is also significantly affected by season, but only when comparing Autumn to Winter. Finally, the highest point reached by the climber was significantly effected by each season. The chosen dataset does not meet assumptions of the MANOVA test, as the covariance between any of the dependent variables is not equal.</em></p>
+</div>
+<div id="randomization" class="section level2">
+<h2>Randomization</h2>
+<pre class="r"><code>obs_F &lt;- 3824.7
+
+Fs &lt;- replicate(5000, {
+  new &lt;- members %&gt;% mutate(highpoint_metres = sample(highpoint_metres))
+  SSW &lt;- new %&gt;% group_by(season) %&gt;% 
+    summarize(SSW = sum((highpoint_metres - mean(highpoint_metres))^2)) %&gt;% 
+    summarize(sum(SSW)) %&gt;% pull
+  SSB &lt;- new %&gt;% mutate(mean = mean(highpoint_metres)) %&gt;% group_by(season) %&gt;% 
+    mutate(groupmean = mean(highpoint_metres)) %&gt;% 
+    summarize(SSB = sum((mean - groupmean)^2)) %&gt;% 
+    summarize(sum(SSB)) %&gt;% pull
+  (SSB/3) / (SSW/52379)
+})
+
+hist(Fs, prob = T)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-4-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>mean(Fs&gt;obs_F)</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p><em>A randomization test was performed in order to determine if the variable season significantly affects the maximum height reached by climbers. If the variables are unrelated, a distribution of simulated F values would be relatively consistent.</em>
+<em>H0: All groups (seasons) have the same means</em>
+<em>HA: The mean differs for different groups</em>
+<em>Considering that none of the F statistics generated during the randomization were greater than the observed F value of 3824.7, we can reject the null hypothesis meaning that there is a significant difference in the highpoint reached by climbers depending on the season.</em></p>
+</div>
+<div id="linear-regression-model" class="section level2">
+<h2>Linear Regression Model</h2>
+<pre class="r"><code>fit &lt;- lm(highpoint_metres ~ age * oxygen_used, data = members)
+summary(fit)</code></pre>
+<pre><code>##
+## Call:
+## lm(formula = highpoint_metres ~ age * oxygen_used, data
+= members)
+##
+## Residuals:
+## Min 1Q Median 3Q Max
+## -3324.1 -419.5 27.9 320.9 2096.4
+##
+## Coefficients:
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 7348.2998 14.2400 516.031 &lt; 2e-16 ***
+## age -10.8124 0.3671 -29.453 &lt; 2e-16 ***
+## oxygen_usedTRUE 1424.1649 24.6460 57.785 &lt; 2e-16 ***
+## age:oxygen_usedTRUE 4.8761 0.6466 7.541 4.75e-14 ***
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Residual standard error: 704.1 on 52379 degrees of
+freedom
+## Multiple R-squared: 0.543, Adjusted R-squared: 0.543
+## F-statistic: 2.075e+04 on 3 and 52379 DF, p-value: &lt;
+2.2e-16</code></pre>
+<pre class="r"><code>members %&gt;% ggplot(aes(x = age, y = highpoint_metres)) + 
+  geom_point(aes(color = oxygen_used)) + geom_smooth(method = &#39;lm&#39;, se =F)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-5-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p><em>The highest point that climbers reached was predicted using their age and whether or not oxygen was used. The resulting linear regression model suggests that the height reached by climbers is significantly affected by their age, whether or not they used oxygen, and the interaction between these variables. As climbers increase in age by 1 year, the highest point reached is expected to drop by 10.81 meters. If oxygen is used, the highest point reached is expected to increase by 1424.17 meters. As climbers increase with age, they are expected to increase their height reached by 4.88 meters if oxygen is used.</em></p>
+<pre class="r"><code>library(lmtest)
+library(sandwich)
+resids &lt;- fit$residuals
+fitvals &lt;- fit$fitted.values
+
+ggplot() + geom_point(aes(fitvals, resids)) +
+  geom_hline(yintercept = 0, color = &quot;red&quot;) #linearity NOT met</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-6-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ks.test(resids, &quot;pnorm&quot;, mean = 0, sd(resids)) #normality NOT met</code></pre>
+<pre><code>## 
+##  One-sample Kolmogorov-Smirnov test
+## 
+## data:  resids
+## D = 0.0932, p-value &lt; 2.2e-16
+## alternative hypothesis: two-sided</code></pre>
+<pre class="r"><code>bptest(fit) #homoskedasticity NOT met</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  fit
+## BP = 4413.6, df = 3, p-value &lt; 2.2e-16</code></pre>
+<pre class="r"><code>summary(fit)$coef[, 1:2]</code></pre>
+<pre><code>##                       Estimate Std. Error
+## (Intercept)         7348.29980 14.2400428
+## age                  -10.81238  0.3671106
+## oxygen_usedTRUE     1424.16491 24.6460377
+## age:oxygen_usedTRUE    4.87609  0.6466347</code></pre>
+<pre class="r"><code>coeftest(fit, vcov = vcovHC(fit))[, 1:2]</code></pre>
+<pre><code>##                       Estimate Std. Error
+## (Intercept)         7348.29980 15.8248421
+## age                  -10.81238  0.4064994
+## oxygen_usedTRUE     1424.16491 20.6660604
+## age:oxygen_usedTRUE    4.87609  0.5497499</code></pre>
+<p><em>The fitted values were plotted against residual values to test for linearity. The non-random aggregation of points suggests that linearity is not met. A one-sample Kolmogorov-Smirnov test suggests that normality is not met (p &lt; 0.001). A Breuch-Pagan test suggests that heteroskedasticity is present (p &lt; 0.001). Robust standard errors were used to determine the results of the adjusted regression, and the results are seen above. The changes in standard error are indicative of the adjustments made as a result of homoskedasticity violations.</em></p>
+<p>##Bootstrapped Standard Errors</p>
+<pre class="r"><code>#residual resample
+resids &lt;- fit$residuals
+fitvals &lt;- fit$fitted.values
+resid_resamp &lt;- replicate(5000, {
+  new_resids &lt;- sample(resids, replace = TRUE)
+  members$new_y &lt;- fitvals + new_resids
+  fit &lt;- lm(new_y ~ age * oxygen_used, data = members)
+  coef(fit)
+})
+
+coeftest(fit)[, 1:2] #standard</code></pre>
+<pre><code>##                       Estimate Std. Error
+## (Intercept)         7348.29980 14.2400428
+## age                  -10.81238  0.3671106
+## oxygen_usedTRUE     1424.16491 24.6460377
+## age:oxygen_usedTRUE    4.87609  0.6466347</code></pre>
+<pre class="r"><code>coeftest(fit, vcov = vcovHC(fit))[, 1:2] #robust</code></pre>
+<pre><code>##                       Estimate Std. Error
+## (Intercept)         7348.29980 15.8248421
+## age                  -10.81238  0.4064994
+## oxygen_usedTRUE     1424.16491 20.6660604
+## age:oxygen_usedTRUE    4.87609  0.5497499</code></pre>
+<pre class="r"><code>resid_resamp %&gt;% t %&gt;% as.data.frame() %&gt;% summarize_all(sd) #bootstrapped using resamp of resids</code></pre>
+<pre><code>## (Intercept) age oxygen_usedTRUE age:oxygen_usedTRUE
+## 1 14.31119 0.369018 24.78432 0.6517855</code></pre>
+<p><em>The same regression model was run using bootstrapped standard errors. This process was done by resampling the residuals of the initial model. The bootstrapped standard errors are closer in value to the original standard errors than the robust values previously calculated.</em></p>
+</div>
+<div id="logistic-regression-model-from-2-variables" class="section level2">
+<h2>Logistic Regression Model from 2 Variables</h2>
+<pre class="r"><code>library(lmtest)
+library(tidyverse)
+fit2 &lt;- glm(success ~ sex + season, data = members, family = &quot;binomial&quot;)
+coeftest(fit2)</code></pre>
+<pre><code>##
+## z test of coefficients:
+##
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) -0.109515 0.030746 -3.5619 0.0003681 ***
+## sexM 0.202476 0.030943 6.5435 6.011e-11 ***
+## seasonSpring 0.161838 0.017863 9.0600 &lt; 2.2e-16 ***
+## seasonSummer -0.265303 0.104653 -2.5351 0.0112422 *
+## seasonWinter -0.550487 0.060785 -9.0564 &lt; 2.2e-16 ***
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>probs &lt;- predict(fit2, type = &quot;response&quot;)
+table(predict = as.numeric(probs &gt; 0.5), truth = members$success) %&gt;% addmargins</code></pre>
+<pre><code>##        truth
+## predict     0     1   Sum
+##     0    2190  1748  3938
+##     1   22122 26323 48445
+##     Sum 24312 28071 52383</code></pre>
+<pre class="r"><code>(2190 + 26323) / 52385 #Accuracy</code></pre>
+<pre><code>## [1] 0.544297</code></pre>
+<pre class="r"><code>26323 / 28071 #Sensitivity</code></pre>
+<pre><code>## [1] 0.9377293</code></pre>
+<pre class="r"><code>2190 / 24312 #Specificity</code></pre>
+<pre><code>## [1] 0.09007897</code></pre>
+<pre class="r"><code>26323 / 48445 #Precision</code></pre>
+<pre><code>## [1] 0.5433584</code></pre>
+<p><em>A logistic regression model was constructed to predict the outcome of the binary variable ‘success’, based on the gender of the climber and the season of the expedition. The log-odds of successfully completing the expedition increases by 0.2025 if the climber is a male, meaning the odds of success increases from 0.8963 to 1.097. The odds of success increases for the season of spring, but decreases during summer and especially during winter. The computed model is 54.4% accurate and can predict that a climber is successful during their expedition 93.8% of the time. The model predicts when climbers do not complete the expedition 9% of the time, and the percentage of climbers predicted to succeed who actually do is equal to 54.3%.</em></p>
+<pre class="r"><code>library(plotROC) 
+
+ROCplot&lt;-ggplot(members)+geom_roc(aes(d=success,m=probs), n.cuts=0) 
+
+ROCplot</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>calc_auc(ROCplot)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.5330819</code></pre>
+<pre class="r"><code>members$logit&lt;-predict(fit2,type=&quot;link&quot;)
+#hideous
+members %&gt;% ggplot() + 
+  geom_density(aes(logit,color=success,fill=success), alpha=.4) +
+  theme(legend.position=c(.85,.85)) + geom_vline(xintercept=0) + 
+  xlab(&quot;logit (log-odds)&quot;) +
+  geom_rug(aes(logit,color=success))</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-9-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p><em>The resulting ROC plot suggests that the model is not great at predicting the success of climbers based on their gender and the season of the expedition. This is due to overlap between the TPR and FPR. The AUC is equal to 0.5331, which further proves the ineffectiveness of the model.</em></p>
+</div>
+<div id="logistic-regression-from-all-variables" class="section level2">
+<h2>Logistic Regression from All Variables</h2>
+<pre class="r"><code>class_diag&lt;-function(probs,truth){
+  
+  if(is.numeric(truth)==FALSE &amp; is.logical(truth)==FALSE) truth&lt;-as.numeric(truth)-1
+  
+  tab&lt;-table(factor(probs&gt;.5,levels=c(&quot;FALSE&quot;,&quot;TRUE&quot;)),truth)
+  prediction&lt;-ifelse(probs&gt;.5,1,0)
+  acc=mean(truth==prediction)
+  sens=mean(prediction[truth==1]==1)
+  spec=mean(prediction[truth==0]==0)
+  ppv=mean(truth[prediction==1]==1)
+  f1=2*(sens*ppv)/(sens+ppv)
+  
+  #CALCULATE EXACT AUC
+  ord&lt;-order(probs, decreasing=TRUE)
+  probs &lt;- probs[ord]; truth &lt;- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup&lt;-c(probs[-1]&gt;=probs[-length(probs)], FALSE)
+  TPR&lt;-c(0,TPR[!dup],1); FPR&lt;-c(0,FPR[!dup],1)
+  
+  n &lt;- length(TPR)
+  auc&lt;- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}</code></pre>
+<pre class="r"><code>fit3 &lt;- glm(success~year + season + sex + age + hired +
+              highpoint_metres + solo + oxygen_used, family = &quot;binomial&quot;, data = members)
+
+probs &lt;- predict(fit3, type = &quot;response&quot;)
+table(predict = as.numeric(probs &gt; 0.5), truth = members$success) %&gt;% addmargins</code></pre>
+<pre><code>##        truth
+## predict     0     1   Sum
+##     0   16657  6752 23409
+##     1    7655 21319 28974
+##     Sum 24312 28071 52383</code></pre>
+<pre class="r"><code>(16657 + 21319) / 52383 #Accuracy</code></pre>
+<pre><code>## [1] 0.724968</code></pre>
+<pre class="r"><code>21319 / 28071 #Sensitivity</code></pre>
+<pre><code>## [1] 0.7594671</code></pre>
+<pre class="r"><code>16657 / 24312 #Specificity</code></pre>
+<pre><code>## [1] 0.6851349</code></pre>
+<pre class="r"><code>21319 / 28974 #Precision</code></pre>
+<pre><code>## [1] 0.7357976</code></pre>
+<p><em>The logistic regression model is 72.5% accurate and can predict whether a climber is successful or not 75.9% of the time. The model predicts when climbers do not complete the expedition 68.5% of the time, and the percentage of climbers predicted to succeed who actually do is equal to 73.6%.</em></p>
+<pre class="r"><code>k=10
+
+data &lt;- members %&gt;% sample_frac 
+folds &lt;- ntile(1:nrow(data),n=10) 
+
+diags&lt;-NULL
+for(i in 1:k){
+  train &lt;- data[folds!=i,]
+  test &lt;- data[folds==i,]
+  truth &lt;- test$success 
+  
+  fit3 &lt;- glm(success~year + season + sex + age + hired +
+                highpoint_metres + solo + oxygen_used, data = members, family=&quot;binomial&quot;)
+  probs &lt;- predict(fit, newdata=test, type=&quot;response&quot;)
+  
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)</code></pre>
+<pre><code>##         acc sens spec       ppv       auc
+## 1 0.5358801    1    0 0.5358801 0.6979117</code></pre>
+<p><em>A 10-fold cross-validation suggests that the model is 53.6% accurate, meaning that it can predict whether or not an expedition is successful 53.6% of the time based on the selected variables. The sensitivity is equal to 1, and specificity equal to 0. The AUC value is equal to 0.6979, which is much higher than before.</em></p>
+<pre class="r"><code>library(glmnet)
+y&lt;-as.matrix(members$success) 
+x&lt;-model.matrix(success ~ year + season + sex + age + hired +
+                  highpoint_metres + solo + oxygen_used, data = members)[,-1] 
+head(x)</code></pre>
+<pre><code>## year seasonSpring seasonSummer seasonWinter sexM age
+hiredTRUE highpoint_metres soloTRUE
+## 1 1978 0 0 0 1 41 0 6000 0
+## 2 1978 0 0 0 1 40 0 6000 0
+## 3 1978 0 0 0 1 25 0 6000 0
+## 4 1978 0 0 0 1 41 0 6000 0
+## 5 1978 0 0 0 1 29 0 6000 0
+## 6 1979 1 0 0 1 37 0 6814 0
+## oxygen_usedTRUE
+## 1 0
+## 2 0
+## 3 0
+## 4 0
+## 5 0
+## 6 0</code></pre>
+<pre class="r"><code>cv &lt;- cv.glmnet(x,y) 
+
+{plot(cv$glmnet.fit, &quot;lambda&quot;, label=TRUE); abline(v = log(cv$lambda.1se)); abline(v = log(cv$lambda.min),lty=2)}</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-13-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cv&lt;-cv.glmnet(x,y,family=&quot;binomial&quot;)
+lasso&lt;-glmnet(x,y,family=&quot;binomial&quot;,lambda=cv$lambda.1se)
+coef(lasso)</code></pre>
+<pre><code>## 11 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                             s0
+## (Intercept)      -22.068589662
+## year               0.006606588
+## seasonSpring      -0.911604433
+## seasonSummer       .          
+## seasonWinter       .          
+## sexM               .          
+## age               -0.005004226
+## hiredTRUE          0.505342931
+## highpoint_metres   0.001272165
+## soloTRUE           .          
+## oxygen_usedTRUE    .</code></pre>
+<pre class="r"><code>fit4 &lt;- glm(success~year + season + age + hired + highpoint_metres, family = &quot;binomial&quot;, data = members)
+
+k=10
+
+data &lt;- members %&gt;% sample_frac
+folds &lt;- ntile(1:nrow(data),n=10) 
+
+diags&lt;-NULL
+for(i in 1:k){
+  train &lt;- data[folds!=i,]
+  test &lt;- data[folds==i,] 
+  truth &lt;- test$success 
+  
+  fit4 &lt;- glm(success~year + season + age + hired + highpoint_metres, data = members, family=&quot;binomial&quot;)
+  probs &lt;- predict(fit, newdata=test, type=&quot;response&quot;)
+  
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean)</code></pre>
+<pre><code>##         acc sens spec       ppv       auc
+## 1 0.5358802    1    0 0.5358802 0.6979071</code></pre>
+<p><em>Performing a LASSO on the model retained only the year, season, age, hired, and highpoint variables. Performing another 10-fold cross-validation yields similar results to before, with only the AUC changing slightly.</em></p>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="../../js/docs.min.js"></script>
+<script src="../../js/main.js"></script>
+
+<script src="../../js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

@@ -1,0 +1,49 @@
+---
+title: "R versus Python"
+author: "Andrew Gillock"
+date: 05-09-2021
+categories: ["R"]
+tags: ["R Markdown", "Python", "Concatenate"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE)
+```
+
+*Python has proven to be quite useful, but especially in saving time with functions not available in R. An example can be seen below:*
+
+```{r}
+#in R
+first <- "and"
+last <- "rew"
+#concatenate
+paste(first, last, sep = "", collapse = NULL)
+```
+
+```{python}
+#in python
+first = "and"
+last = "rew"
+#concatenate
+first + last
+```
+
+*Despite performing the same operation and displaying the same output, Python can be faster than R in certain situations.*
+
+*The reticulate package demonstrates the interaction between R and Python.*
+
+```{r}
+library(reticulate)
+library(tidyverse)
+```
+
+```{python}
+x = list(range(1,11))
+y = list(range(1,21,2))
+```
+
+```{r}
+ggplot() + geom_line(aes(py$x, py$y))
+```
+![](https://i2.wp.com/www.business-science.io/assets/2021-02-18-R-is-for-research/Tidyverse_meme.png?w=578&ssl=1)
+

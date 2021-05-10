@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>/</loc>
+  </url><url>
+    <loc>/categories/</loc>
+  </url><url>
+    <loc>/tags/concatenate/</loc>
+  </url><url>
+    <loc>/post/</loc>
+  </url><url>
+    <loc>/project/project2/</loc>
+  </url><url>
+    <loc>/project/</loc>
+  </url><url>
+    <loc>/projects/</loc>
+  </url><url>
+    <loc>/tags/python/</loc>
+  </url><url>
+    <loc>/categories/r/</loc>
+  </url><url>
+    <loc>/tags/r-markdown/</loc>
+  </url><url>
+    <loc>/post/1/01/01/r-versus-python/</loc>
+  </url><url>
+    <loc>/resume/</loc>
+  </url><url>
+    <loc>/project/project1/</loc>
+  </url><url>
+    <loc>/tags/</loc>
+  </url>
+</urlset>

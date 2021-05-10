@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R on Andrew Gillock</title>
+    <link>/categories/r/</link>
+    <description>Recent content in R on Andrew Gillock</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language><atom:link href="/categories/r/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>R versus Python</title>
+      <link>/post/1/01/01/r-versus-python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/post/1/01/01/r-versus-python/</guid>
+      <description>Python has proven to be quite useful, but especially in saving time with functions not available in R. An example can be seen below:
+#in R first &amp;lt;- &amp;quot;and&amp;quot; last &amp;lt;- &amp;quot;rew&amp;quot; #concatenate paste(first, last, sep = &amp;quot;&amp;quot;, collapse = NULL) ## [1] &amp;quot;andrew&amp;quot; #in python first = &amp;quot;and&amp;quot; last = &amp;quot;rew&amp;quot; #concatenate first + last ## &amp;#39;andrew&amp;#39; Despite performing the same operation and displaying the same output, Python can be faster than R in certain situations.</description>
+    </item>
+    
+  </channel>
+</rss>

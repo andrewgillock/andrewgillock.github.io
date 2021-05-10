@@ -1,0 +1,173 @@
+---
+title: 'SDS348 Project 1: Exploratory Data Analysis'
+author: "Andrew Gillock apg2255"
+date: '4 April 2021'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", 
+    warning = F, message = F, tidy = TRUE, tidy.opts = list(width.cutoff = 60), 
+    R.options = list(max.print = 100))
+
+```
+
+## Data Wrangling and Data Exploration
+
+## 0. Introduction
+```{r}
+library(tidyverse)
+launches <- read_csv("launches.csv")
+launches <- launches %>% filter(state_code == "US") %>% 
+  select(launch_date, launch_year, mission, category)
+head(launches)
+```
+The first dataset I selected came from the archive of tidytuesday data from github, and contains information regarding rocket launches from 1957 to 2018. The dataset initially had 5,726 rows and 11 columns. For the purposes of this project, I filtered the dataset to only include the launch date, mission name, and category (success/failure) of launches from the United States.
+
+```{r}
+ufo_sightings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-25/ufo_sightings.csv")
+ufo_sightings <- ufo_sightings %>% 
+  filter(country == "us") %>% 
+  separate(date_time, into = c("date", "time"), sep = " ") %>% 
+  select(date, time, city_area, state, ufo_shape, encounter_length) %>% 
+  mutate(date2 = as.Date(date, "%m/%d/%Y")) %>% select(-date) %>% 
+  separate(time, into = c("encounter_hour", "encounter_minute"))
+head(ufo_sightings)
+```
+The second dataset I selected is also from the tidytuesday archive on github. This set contains information regarding UFO sightings from 1910 to 2014, with 80,332 rows and 11 columns. For the purpose of the project, I selected the date, time, city, state, and length of the encounter, as well as the reported shape of the object. I suspected that there would be a large number of UFO sightings on the date of rocket launches, which led me to join these two data sets together and investigate their relationship.
+
+## 1. Tidying: Rearranging Wide/Long
+
+Each dataset is already tidy, so I made use of pivot_wider() in the wrangling section to better represent the summarized data. I used pivot_longer() to restore the data and demonstrate my use of the functions.
+
+## 2. Joining/Merging
+```{r}
+data <- launches %>% full_join(ufo_sightings, by = c("launch_date" = "date2")) %>% #join by date
+  mutate(encounter_hour = as.numeric(encounter_hour), encounter_minute = as.numeric(encounter_minute)) %>% # make encounter hour/minute numeric
+  rename(event_date = launch_date) 
+head(data)
+```
+A full join was done on the launches and ufo_sightings datasets based on the date of the launch/sighting. All variables that were selected previously were preserved. The resulting dataset contains 66,230 rows and 12 columns, and was further broken down throughout the rest of the project. Rows that contained no values for encounter_hour, encounter_minute, ufo_shape, etc. represent rocket launches that *did not have* a reported ufo sighting on the same day. Rows that include information for each column represent rocket launches that *did have* ufo sightings reported on the same day in the United States. To account for the join, the launch date was renamed as "event_date", and the encounter hour/minute were converted to numeric values.
+
+
+
+## 3. Wrangling
+```{r}
+data <- data %>% group_by(event_date) %>% add_count(name = "same_day_sightings") %>% # creating count of sightings for given date
+  mutate(match = ifelse(is.na(encounter_hour) || is.na(launch_year), 0, 1)) # allows to filter for only days where launch and sighting both occurred
+data2 <- data %>% filter(launch_year >= 1957 & launch_year <= 2014) %>% arrange(launch_year)
+
+truedat <- data %>% filter(match == 1)
+
+nrow(truedat)/nrow(data2) * 100 # what percentage of ufo sightings after 1957 occurred the same day as a rocket launch?
+```
+The newly joined dataset was grouped by the date of event, and a count was added to determine how many sightings occurred for each date. A new column was added called "match", which I used to determine whether or not the launch date and sighting date were the same for a given row. Filtering the dataset to only include matching launches/sightings was important for determining the relationships between those variables. The "data2" variable was created to only account for launches/sightings that occurred between the years 1957 and 2014. Dividing the number of matches by the total number of sightings (1957-2014) gives us 0.797, meaning roughly 79.7% of UFO sightings occurred on days where a rocket launch occurred!
+
+```{r}
+truedat %>% group_by(ufo_shape) %>% # max encounter length for each ufo shape (minutes)
+  summarize(max_encounter = max(encounter_length/60)) 
+
+truedat %>% group_by(ufo_shape) %>% # mean encounter length for each reported ufo shape (minutes), including pivot_wider()
+  summarize(mean_encounter_length = mean(encounter_length/60, na.rm = T)) %>% 
+  arrange(desc(mean_encounter_length)) %>% 
+  pivot_wider(names_from = "ufo_shape", values_from = "mean_encounter_length") %>% round(1) #%>% 
+  #pivot_longer(cols = c(fireball:cylinder), names_to = "ufo_shape", values_to = "mean_encounter_length")
+```
+I began summarizing the data by grouping it by the reported UFO shape. The maximum encounter length (in minutes) was determined for each shape registered. Next, the mean encounter length (in minutes) was determined for each shape and the result was piped into pivot_wider in order to better visualize the data. 
+```{r}
+truedat %>% summarize(median_encounter = median(encounter_hour)) # median encounter hour for each event date
+
+truedat %>% group_by(launch_year) %>% # mean and sd encounter length for each launch year (minutes)
+  summarize(mean_encounter = mean(encounter_length/60, na.rm = T), sd_encounter = sd(encounter_length/60, na.rm = T)) %>%
+  round(1)
+
+truedat %>% group_by(state, category) %>%  # which state had the most successful rocket launches when a ufo sighting is reported?
+  filter(category == "O") %>% 
+  summarize(count = n()) %>% 
+  arrange(desc(count))
+  
+truedat %>% group_by(state, category) %>% # which state had the most unsuccessful launches when a ufo sighting was reported?
+  filter(category == "F") %>% 
+  summarize(count = n()) %>% 
+  arrange(desc(count))
+```
+Grouping by state and the category of the launch allowed us to determine which state had the most success (or failure) when it comes to rocket launches. When viewing the results, it looks like California holds the #1 spot for both! A total of 527 successful launches and 19 unsuccessful launches occurred in California from 1957 to 2018.
+```{r}
+numdat <- truedat %>% select_if(is.numeric) %>% select(-match) %>% subset(select = -event_date) %>% cor(use = "pair") # correlation matrix
+numdat
+```
+Lastly, a correlation matrix wax created for the numeric values in the dataset. This gives us an idea about the relationship between different variables while also providing us the groundwork for visualizing the data.
+
+## 4. Visualizing
+
+```{r}
+tidydat <- numdat %>% as.data.frame %>% rownames_to_column("var1") %>% 
+  pivot_longer(-1, names_to = "var2", values_to = "correlation")
+
+tidydat %>% ggplot(aes(var1, var2, fill = correlation)) + geom_tile() + 
+  scale_fill_gradient2(low="red",mid="white",high="blue") +
+  geom_text(aes(label=round(correlation,2)),color = "black", size = 4) +        
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  coord_fixed()
+```
+Above shows a correlation heatmap between each numeric variable in the dataset, where a color spectrum used to better examine the relationship between variables. Blue is representative of greater correlation while white is representative of no correlation. There appears to be little to no correlation between them regardless of the statistics created previously. The greatest correlation occurred between the number of same day sightings and the year that the event happened. 
+```{r}
+truedat %>% distinct() %>% ggplot(aes(launch_year, same_day_sightings)) + geom_point(stat = "summary", aes(color = category)) +
+  scale_x_continuous(breaks = seq(1950, 2020, by = 10)) + ggtitle("Number of Sightings Reported Over Time") + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "top")
+```
+Considering that the greatest amount of correlation occurred between the year that the launch occurred and the number of UFO sightings reported for the same day, I created a plot displaying this relationship. It is apparent that the number of same day sightings reported increased over time, resembling an exponential curve as time goes on. Each point on the plot is colored according to the category of the event. There appears to be no correlation between how many sightings were reported and whether or not launch was successful.
+
+```{r}
+data2 <- data2 %>% filter(match == 1) %>%  mutate(decade = floor(launch_year/10)*10) %>% 
+      group_by(decade)
+
+data2 %>% group_by(decade) %>% count(ufo_shape) %>% slice(which.max(n)) %>% ggplot(aes(decade, n)) + geom_bar(stat = "identity", aes(fill = ufo_shape)) + scale_x_continuous(breaks = seq(1950, 2020, by = 10)) + ggtitle("Most Commonly Reported UFO Shape for each Decade") + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "top")
+```
+Let's take a look at the most commonly reported UFO shapes for each decade. I began by creating a new column in the existing dataset that defines the decade of each launch/sighting. I grouped by decade and counted the number of sightings for each UFO shape before selecting the largest value. These values were plotted using a bar chart, where the color of each bar is representative of the most common UFO shape! "Light" seems to be the most popular shape (and largest number of sightings) that was reported since 1990, which is consistent with our previous graph. As the time continues, more sightings were reported!
+
+## 5. Dimensionality Reduction
+
+```{r}
+finaldat <- truedat %>% select_if(is.numeric) %>% # cleaning data, selecting only numerics that matter
+  select(-match) %>% 
+  subset(select = -event_date) %>% 
+  scale() # normalizing the data
+head(finaldat)
+rownames(finaldat) <- truedat$event_date
+pca <- princomp(finaldat) 
+names(pca)
+```
+
+```{r}
+summary(pca, loadings = T) # summary of PCA
+
+eigval <- pca$sdev^2 # obtaining eigenvalues
+varprop = round(eigval/sum(eigval), 2) # determines proportion of variation for each principal component
+varprop
+ggplot() + geom_bar(aes(y=varprop, x=1:5), stat="identity") + xlab("") + geom_path(aes(y=varprop, x=1:5)) + #determining how many principal components to keep!
+  geom_text(aes(x=1:5, y=varprop, label=round(varprop, 2)), vjust=1, col="white", size=5) + 
+  scale_y_continuous(breaks=seq(0, .6, .2)) + 
+  scale_x_continuous(breaks=1:10)
+```
+A scree plot was created in order to determine the number of principal components to keep. According to the plot, 2 principal components would be most ideal since the curve flattens afterwards. It is important to understand each principal component's contribution to the overall variation, which is equivalent to the values within each bar. 
+```{r}
+df <- data.frame(PC1 = pca$scores[, 1], PC2 = pca$scores[, 2]) #creating dataframe so we can plot principal components
+ggplot(df, aes(PC1, PC2)) + geom_point() + ylim(-20, 10)
+```
+The scores from the dataset were then plotted using the first 2 principal components. The results can be seen above, where an extreme value is visible on the lower end of the y-axis. Principal component 1 is responsible for 30% of the variation whereas principle component 2 accounts for 21% of variation. 
+```{r}
+pca$loadings[1:5, 1:2] %>% as.data.frame %>% rownames_to_column %>% # tells us which variables contribute to which principal components
+ggplot() + geom_hline(aes(yintercept=0), lty=2) + 
+  geom_vline(aes(xintercept=0), lty=2) + ylab("PC2") + xlab("PC1") + 
+  geom_segment(aes(x=0, y=0, xend=Comp.1, yend=Comp.2), arrow=arrow(), col="red") + 
+  geom_label(aes(x=Comp.1*1.1, y=Comp.2*1.1, label=rowname)) + xlim( -0.2, 1)
+```
+Finally, a loading plot was created in order to determine which variables contribute to each principal component. The angles between each vector show the correlation between the two!
+

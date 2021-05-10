@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Andrew Gillock" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
+    <title>SDS348 Project 1: Exploratory Data Analysis</title>
+    <meta name="generator" content="Hugo 0.83.1" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../../css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="../../"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="../../post/">BLOG</a></li>
+        
+        <li><a href="../../projects/">PROJECTS</a></li>
+        
+        <li><a href="../../resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="../../project/project1/">SDS348 Project 1: Exploratory Data Analysis</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         January 1, 0001 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="data-wrangling-and-data-exploration" class="section level2">
+<h2>Data Wrangling and Data Exploration</h2>
+</div>
+<div id="introduction" class="section level2">
+<h2>0. Introduction</h2>
+<pre class="r"><code>library(tidyverse)
+launches &lt;- read_csv(&quot;launches.csv&quot;)
+launches &lt;- launches %&gt;% filter(state_code == &quot;US&quot;) %&gt;% select(launch_date, 
+    launch_year, mission, category)
+head(launches)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+##   launch_date launch_year mission              category
+##   &lt;date&gt;            &lt;dbl&gt; &lt;chr&gt;                &lt;chr&gt;   
+## 1 1967-06-29         1967 Secor Type II S/N 10 O       
+## 2 1967-08-23         1967 DAPP 3419            O       
+## 3 1967-10-11         1967 DAPP 4417            O       
+## 4 1968-05-23         1968 DAPP 5420            O       
+## 5 1968-10-23         1968 DAPP 6422            O       
+## 6 1969-07-23         1969 DAPP 7421            O</code></pre>
+<p>The first dataset I selected came from the archive of tidytuesday data from github, and contains information regarding rocket launches from 1957 to 2018. The dataset initially had 5,726 rows and 11 columns. For the purposes of this project, I filtered the dataset to only include the launch date, mission name, and category (success/failure) of launches from the United States.</p>
+<pre class="r"><code>ufo_sightings &lt;- readr::read_csv(&quot;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-25/ufo_sightings.csv&quot;)
+ufo_sightings &lt;- ufo_sightings %&gt;% filter(country == &quot;us&quot;) %&gt;% 
+    separate(date_time, into = c(&quot;date&quot;, &quot;time&quot;), sep = &quot; &quot;) %&gt;% 
+    select(date, time, city_area, state, ufo_shape, encounter_length) %&gt;% 
+    mutate(date2 = as.Date(date, &quot;%m/%d/%Y&quot;)) %&gt;% select(-date) %&gt;% 
+    separate(time, into = c(&quot;encounter_hour&quot;, &quot;encounter_minute&quot;))
+head(ufo_sightings)</code></pre>
+<pre><code>## # A tibble: 6 x 7
+##   encounter_hour encounter_minute city_area state ufo_shape encounter_length
+##   &lt;chr&gt;          &lt;chr&gt;            &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;                &lt;dbl&gt;
+## 1 20             30               san marc… tx    cylinder              2700
+## 2 21             00               edna      tx    circle                  20
+## 3 20             00               kaneohe   hi    light                  900
+## 4 19             00               bristol   tn    sphere                 300
+## 5 23             45               norwalk   ct    disk                  1200
+## 6 20             00               pell city al    disk                   180
+## # … with 1 more variable: date2 &lt;date&gt;</code></pre>
+<p>The second dataset I selected is also from the tidytuesday archive on github. This set contains information regarding UFO sightings from 1910 to 2014, with 80,332 rows and 11 columns. For the purpose of the project, I selected the date, time, city, state, and length of the encounter, as well as the reported shape of the object. I suspected that there would be a large number of UFO sightings on the date of rocket launches, which led me to join these two data sets together and investigate their relationship.</p>
+</div>
+<div id="tidying-rearranging-widelong" class="section level2">
+<h2>1. Tidying: Rearranging Wide/Long</h2>
+<p>Each dataset is already tidy, so I made use of pivot_wider() in the wrangling section to better represent the summarized data. I used pivot_longer() to restore the data and demonstrate my use of the functions.</p>
+</div>
+<div id="joiningmerging" class="section level2">
+<h2>2. Joining/Merging</h2>
+<pre class="r"><code>data &lt;- launches %&gt;% full_join(ufo_sightings, by = c(&quot;launch_date&quot; = &quot;date2&quot;)) %&gt;% #join by date
+  mutate(encounter_hour = as.numeric(encounter_hour), encounter_minute = as.numeric(encounter_minute)) %&gt;% # make encounter hour/minute numeric
+  rename(event_date = launch_date) 
+head(data)</code></pre>
+<pre><code>## # A tibble: 6 x 10
+##   event_date launch_year mission category encounter_hour encounter_minute
+##   &lt;date&gt;           &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;             &lt;dbl&gt;            &lt;dbl&gt;
+## 1 1967-06-29        1967 Secor … O                    NA               NA
+## 2 1967-08-23        1967 DAPP 3… O                    NA               NA
+## 3 1967-10-11        1967 DAPP 4… O                    NA               NA
+## 4 1968-05-23        1968 DAPP 5… O                    NA               NA
+## 5 1968-10-23        1968 DAPP 6… O                    15                0
+## 6 1969-07-23        1969 DAPP 7… O                    NA               NA
+## # … with 4 more variables: city_area &lt;chr&gt;, state &lt;chr&gt;, ufo_shape &lt;chr&gt;,
+## #   encounter_length &lt;dbl&gt;</code></pre>
+<p>A full join was done on the launches and ufo_sightings datasets based on the date of the launch/sighting. All variables that were selected previously were preserved. The resulting dataset contains 66,230 rows and 12 columns, and was further broken down throughout the rest of the project. Rows that contained no values for encounter_hour, encounter_minute, ufo_shape, etc. represent rocket launches that <em>did not have</em> a reported ufo sighting on the same day. Rows that include information for each column represent rocket launches that <em>did have</em> ufo sightings reported on the same day in the United States. To account for the join, the launch date was renamed as “event_date”, and the encounter hour/minute were converted to numeric values.</p>
+</div>
+<div id="wrangling" class="section level2">
+<h2>3. Wrangling</h2>
+<pre class="r"><code>data &lt;- data %&gt;% group_by(event_date) %&gt;% add_count(name = &quot;same_day_sightings&quot;) %&gt;% # creating count of sightings for given date
+  mutate(match = ifelse(is.na(encounter_hour) || is.na(launch_year), 0, 1)) # allows to filter for only days where launch and sighting both occurred
+data2 &lt;- data %&gt;% filter(launch_year &gt;= 1957 &amp; launch_year &lt;= 2014) %&gt;% arrange(launch_year)
+
+truedat &lt;- data %&gt;% filter(match == 1)
+
+nrow(truedat)/nrow(data2) * 100 # what percentage of ufo sightings after 1957 occurred the same day as a rocket launch?</code></pre>
+<pre><code>## [1] 79.72945</code></pre>
+<p>The newly joined dataset was grouped by the date of event, and a count was added to determine how many sightings occurred for each date. A new column was added called “match”, which I used to determine whether or not the launch date and sighting date were the same for a given row. Filtering the dataset to only include matching launches/sightings was important for determining the relationships between those variables. The “data2” variable was created to only account for launches/sightings that occurred between the years 1957 and 2014. Dividing the number of matches by the total number of sightings (1957-2014) gives us 0.797, meaning roughly 79.7% of UFO sightings occurred on days where a rocket launch occurred!</p>
+<pre class="r"><code>truedat %&gt;% group_by(ufo_shape) %&gt;% # max encounter length for each ufo shape (minutes)
+  summarize(max_encounter = max(encounter_length/60)) </code></pre>
+<pre><code>## # A tibble: 23 x 2
+##    ufo_shape max_encounter
+##    &lt;chr&gt;             &lt;dbl&gt;
+##  1 changing           1230
+##  2 chevron             240
+##  3 cigar              2880
+##  4 circle             4320
+##  5 cone                 45
+##  6 cross                30
+##  7 cylinder             60
+##  8 delta                 7
+##  9 diamond             120
+## 10 disk                630
+## # … with 13 more rows</code></pre>
+<pre class="r"><code>truedat %&gt;% group_by(ufo_shape) %&gt;% # mean encounter length for each reported ufo shape (minutes), including pivot_wider()
+  summarize(mean_encounter_length = mean(encounter_length/60, na.rm = T)) %&gt;% 
+  arrange(desc(mean_encounter_length)) %&gt;% 
+  pivot_wider(names_from = &quot;ufo_shape&quot;, values_from = &quot;mean_encounter_length&quot;) %&gt;% round(1) #%&gt;% </code></pre>
+<pre><code>## # A tibble: 1 x 23
+##   fireball   egg cigar sphere changing light circle  disk diamond other chevron
+##      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1    1014.  58.2  53.4   53.2     31.5  28.5   26.2  21.8    17.7  16.6    14.8
+## # … with 12 more variables: `NA` &lt;dbl&gt;, oval &lt;dbl&gt;, unknown &lt;dbl&gt;, flash &lt;dbl&gt;,
+## #   triangle &lt;dbl&gt;, cone &lt;dbl&gt;, cross &lt;dbl&gt;, formation &lt;dbl&gt;, teardrop &lt;dbl&gt;,
+## #   delta &lt;dbl&gt;, rectangle &lt;dbl&gt;, cylinder &lt;dbl&gt;</code></pre>
+<pre class="r"><code>  #pivot_longer(cols = c(fireball:cylinder), names_to = &quot;ufo_shape&quot;, values_to = &quot;mean_encounter_length&quot;)</code></pre>
+<p>I began summarizing the data by grouping it by the reported UFO shape. The maximum encounter length (in minutes) was determined for each shape registered. Next, the mean encounter length (in minutes) was determined for each shape and the result was piped into pivot_wider in order to better visualize the data.</p>
+<pre class="r"><code>truedat %&gt;% summarize(median_encounter = median(encounter_hour)) # median encounter hour for each event date</code></pre>
+<pre><code>## # A tibble: 632 x 2
+##    event_date median_encounter
+##    &lt;date&gt;                &lt;dbl&gt;
+##  1 1959-07-16             18  
+##  2 1959-08-13             21.5
+##  3 1959-08-15             15  
+##  4 1960-04-01             21  
+##  5 1960-08-10              9.5
+##  6 1961-02-22             20  
+##  7 1961-06-30             17  
+##  8 1961-08-30              0  
+##  9 1962-05-15             21  
+## 10 1962-05-30             20  
+## # … with 622 more rows</code></pre>
+<pre class="r"><code>truedat %&gt;% group_by(launch_year) %&gt;% # mean and sd encounter length for each launch year (minutes)
+  summarize(mean_encounter = mean(encounter_length/60, na.rm = T), sd_encounter = sd(encounter_length/60, na.rm = T)) %&gt;%
+  round(1)</code></pre>
+<pre><code>## # A tibble: 56 x 3
+##    launch_year mean_encounter sd_encounter
+##          &lt;dbl&gt;          &lt;dbl&gt;        &lt;dbl&gt;
+##  1        1959           20.8         17.7
+##  2        1960            8.4         10.3
+##  3        1961          506.        1164  
+##  4        1962            3.5          3  
+##  5        1963           97.8        137. 
+##  6        1964            9.5         18  
+##  7        1965         3881.       18963. 
+##  8        1966           11.8         20.1
+##  9        1967            6.2          8.1
+## 10        1968           10.1         14.5
+## # … with 46 more rows</code></pre>
+<pre class="r"><code>truedat %&gt;% group_by(state, category) %&gt;%  # which state had the most successful rocket launches when a ufo sighting is reported?
+  filter(category == &quot;O&quot;) %&gt;% 
+  summarize(count = n()) %&gt;% 
+  arrange(desc(count))</code></pre>
+<pre><code>## # A tibble: 51 x 3
+## # Groups:   state [51]
+##    state category count
+##    &lt;chr&gt; &lt;chr&gt;    &lt;int&gt;
+##  1 ca    O          527
+##  2 fl    O          258
+##  3 wa    O          235
+##  4 tx    O          189
+##  5 ny    O          186
+##  6 pa    O          153
+##  7 az    O          139
+##  8 oh    O          126
+##  9 or    O          111
+## 10 il    O           96
+## # … with 41 more rows</code></pre>
+<pre class="r"><code>truedat %&gt;% group_by(state, category) %&gt;% # which state had the most unsuccessful launches when a ufo sighting was reported?
+  filter(category == &quot;F&quot;) %&gt;% 
+  summarize(count = n()) %&gt;% 
+  arrange(desc(count))</code></pre>
+<pre><code>## # A tibble: 34 x 3
+## # Groups:   state [34]
+##    state category count
+##    &lt;chr&gt; &lt;chr&gt;    &lt;int&gt;
+##  1 ca    F           19
+##  2 nc    F            7
+##  3 il    F            6
+##  4 md    F            6
+##  5 oh    F            6
+##  6 tx    F            6
+##  7 nj    F            5
+##  8 wa    F            5
+##  9 co    F            4
+## 10 fl    F            4
+## # … with 24 more rows</code></pre>
+<p>Grouping by state and the category of the launch allowed us to determine which state had the most success (or failure) when it comes to rocket launches. When viewing the results, it looks like California holds the #1 spot for both! A total of 527 successful launches and 19 unsuccessful launches occurred in California from 1957 to 2018.</p>
+<pre class="r"><code>numdat &lt;- truedat %&gt;% select_if(is.numeric) %&gt;% select(-match) %&gt;% 
+    subset(select = -event_date) %&gt;% cor(use = &quot;pair&quot;)  # correlation matrix
+numdat</code></pre>
+<pre><code>##                     launch_year encounter_hour encounter_minute
+## launch_year         1.000000000    0.008298324      0.162452239
+## encounter_hour      0.008298324    1.000000000     -0.009622217
+## encounter_minute    0.162452239   -0.009622217      1.000000000
+## encounter_length   -0.025166946    0.018766217     -0.025111776
+## same_day_sightings  0.425035978    0.087472332      0.049740437
+##                    encounter_length same_day_sightings
+## launch_year            -0.025166946        0.425035978
+## encounter_hour          0.018766217        0.087472332
+## encounter_minute       -0.025111776        0.049740437
+## encounter_length        1.000000000        0.007019594
+## same_day_sightings      0.007019594        1.000000000</code></pre>
+<p>Lastly, a correlation matrix wax created for the numeric values in the dataset. This gives us an idea about the relationship between different variables while also providing us the groundwork for visualizing the data.</p>
+</div>
+<div id="visualizing" class="section level2">
+<h2>4. Visualizing</h2>
+<pre class="r"><code>tidydat &lt;- numdat %&gt;% as.data.frame %&gt;% rownames_to_column(&quot;var1&quot;) %&gt;% 
+    pivot_longer(-1, names_to = &quot;var2&quot;, values_to = &quot;correlation&quot;)
+
+tidydat %&gt;% ggplot(aes(var1, var2, fill = correlation)) + geom_tile() + 
+    scale_fill_gradient2(low = &quot;red&quot;, mid = &quot;white&quot;, high = &quot;blue&quot;) + 
+    geom_text(aes(label = round(correlation, 2)), color = &quot;black&quot;, 
+        size = 4) + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1)) + coord_fixed()</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" />
+Above shows a correlation heatmap between each numeric variable in the dataset, where a color spectrum used to better examine the relationship between variables. Blue is representative of greater correlation while white is representative of no correlation. There appears to be little to no correlation between them regardless of the statistics created previously. The greatest correlation occurred between the number of same day sightings and the year that the event happened.</p>
+<pre class="r"><code>truedat %&gt;% distinct() %&gt;% ggplot(aes(launch_year, same_day_sightings)) + 
+    geom_point(stat = &quot;summary&quot;, aes(color = category)) + scale_x_continuous(breaks = seq(1950, 
+    2020, by = 10)) + ggtitle(&quot;Number of Sightings Reported Over Time&quot;) + 
+    theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = &quot;top&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" />
+Considering that the greatest amount of correlation occurred between the year that the launch occurred and the number of UFO sightings reported for the same day, I created a plot displaying this relationship. It is apparent that the number of same day sightings reported increased over time, resembling an exponential curve as time goes on. Each point on the plot is colored according to the category of the event. There appears to be no correlation between how many sightings were reported and whether or not launch was successful.</p>
+<pre class="r"><code>data2 &lt;- data2 %&gt;% filter(match == 1) %&gt;% mutate(decade = floor(launch_year/10) * 
+    10) %&gt;% group_by(decade)
+
+data2 %&gt;% group_by(decade) %&gt;% count(ufo_shape) %&gt;% slice(which.max(n)) %&gt;% 
+    ggplot(aes(decade, n)) + geom_bar(stat = &quot;identity&quot;, aes(fill = ufo_shape)) + 
+    scale_x_continuous(breaks = seq(1950, 2020, by = 10)) + ggtitle(&quot;Most Commonly Reported UFO Shape for each Decade&quot;) + 
+    theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = &quot;top&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
+Let’s take a look at the most commonly reported UFO shapes for each decade. I began by creating a new column in the existing dataset that defines the decade of each launch/sighting. I grouped by decade and counted the number of sightings for each UFO shape before selecting the largest value. These values were plotted using a bar chart, where the color of each bar is representative of the most common UFO shape! “Light” seems to be the most popular shape (and largest number of sightings) that was reported since 1990, which is consistent with our previous graph. As the time continues, more sightings were reported!</p>
+</div>
+<div id="dimensionality-reduction" class="section level2">
+<h2>5. Dimensionality Reduction</h2>
+<pre class="r"><code>finaldat &lt;- truedat %&gt;% select_if(is.numeric) %&gt;% # cleaning data, selecting only numerics that matter
+  select(-match) %&gt;% 
+  subset(select = -event_date) %&gt;% 
+  scale() # normalizing the data
+head(finaldat)</code></pre>
+<pre><code>##      launch_year encounter_hour encounter_minute encounter_length
+## [1,]   -3.130957     -0.0843132       -0.9880140      -0.02113046
+## [2,]   -2.772259      0.5789391        0.6850242      -0.02782617
+## [3,]   -2.592910     -0.4822646       -0.9880140      -0.02866314
+## [4,]   -2.592910     -0.4822646       -0.9880140      -0.02868850
+## [5,]   -2.234211     -2.0740702       -0.9880140      -0.02417396
+## [6,]   -2.234211      0.3136382       -0.9880140      -0.02721747
+##      same_day_sightings
+## [1,]          -1.251040
+## [2,]          -1.251040
+## [3,]          -1.147004
+## [4,]          -1.147004
+## [5,]          -1.147004
+## [6,]          -1.147004</code></pre>
+<pre class="r"><code>rownames(finaldat) &lt;- truedat$event_date
+pca &lt;- princomp(finaldat) 
+names(pca)</code></pre>
+<pre><code>## [1] &quot;sdev&quot;     &quot;loadings&quot; &quot;center&quot;   &quot;scale&quot;    &quot;n.obs&quot;    &quot;scores&quot;   &quot;call&quot;</code></pre>
+<pre class="r"><code>summary(pca, loadings = T) # summary of PCA</code></pre>
+<pre><code>## Importance of components:
+##                           Comp.1    Comp.2    Comp.3    Comp.4    Comp.5
+## Standard deviation     1.2170283 1.0234257 0.9890772 0.9689432 0.7436478
+## Proportion of Variance 0.2963089 0.2095347 0.1957058 0.1878192 0.1106313
+## Cumulative Proportion  0.2963089 0.5058437 0.7015495 0.8893687 1.0000000
+## 
+## Loadings:
+##                    Comp.1 Comp.2 Comp.3 Comp.4 Comp.5
+## launch_year         0.683                0.159  0.706
+## encounter_hour      0.123 -0.653 -0.538 -0.507  0.114
+## encounter_minute    0.297  0.463  0.212 -0.788 -0.177
+## encounter_length          -0.565  0.812 -0.135       
+## same_day_sightings  0.655 -0.190         0.280 -0.675</code></pre>
+<pre class="r"><code>eigval &lt;- pca$sdev^2 # obtaining eigenvalues
+varprop = round(eigval/sum(eigval), 2) # determines proportion of variation for each principal component
+varprop</code></pre>
+<pre><code>## Comp.1 Comp.2 Comp.3 Comp.4 Comp.5 
+##   0.30   0.21   0.20   0.19   0.11</code></pre>
+<pre class="r"><code>ggplot() + geom_bar(aes(y=varprop, x=1:5), stat=&quot;identity&quot;) + xlab(&quot;&quot;) + geom_path(aes(y=varprop, x=1:5)) + #determining how many principal components to keep!
+  geom_text(aes(x=1:5, y=varprop, label=round(varprop, 2)), vjust=1, col=&quot;white&quot;, size=5) + 
+  scale_y_continuous(breaks=seq(0, .6, .2)) + 
+  scale_x_continuous(breaks=1:10)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" />
+A scree plot was created in order to determine the number of principal components to keep. According to the plot, 2 principal components would be most ideal since the curve flattens afterwards. It is important to understand each principal component’s contribution to the overall variation, which is equivalent to the values within each bar.</p>
+<pre class="r"><code>df &lt;- data.frame(PC1 = pca$scores[, 1], PC2 = pca$scores[, 2])  #creating dataframe so we can plot principal components
+ggplot(df, aes(PC1, PC2)) + geom_point() + ylim(-20, 10)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" />
+The scores from the dataset were then plotted using the first 2 principal components. The results can be seen above, where an extreme value is visible on the lower end of the y-axis. Principal component 1 is responsible for 30% of the variation whereas principle component 2 accounts for 21% of variation.</p>
+<pre class="r"><code>pca$loadings[1:5, 1:2] %&gt;% as.data.frame %&gt;% rownames_to_column %&gt;% # tells us which variables contribute to which principal components
+ggplot() + geom_hline(aes(yintercept=0), lty=2) + 
+  geom_vline(aes(xintercept=0), lty=2) + ylab(&quot;PC2&quot;) + xlab(&quot;PC1&quot;) + 
+  geom_segment(aes(x=0, y=0, xend=Comp.1, yend=Comp.2), arrow=arrow(), col=&quot;red&quot;) + 
+  geom_label(aes(x=Comp.1*1.1, y=Comp.2*1.1, label=rowname)) + xlim( -0.2, 1)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" />
+Finally, a loading plot was created in order to determine which variables contribute to each principal component. The angles between each vector show the correlation between the two!</p>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="../../js/docs.min.js"></script>
+<script src="../../js/main.js"></script>
+
+<script src="../../js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>
